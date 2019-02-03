@@ -1,0 +1,47 @@
+{
+    "Comment": "Step functions with Lambda to get Tests' state from DeviceFarm",
+    "StartAt": "Timer",
+    "States": {
+        "Timer": {
+            "Type": "Wait",
+            "Seconds": 120,
+            "OutputPath": "$",
+            "Next": "LambdaSQSStatus"
+        },
+        "LambdaSQSStatus": {
+            "Type": "Task",
+            "Resource": "ARN:lambda_sqs_status",
+            "OutputPath": "$",
+            "Next": "ChoiceState"
+        },
+        "Finish": {
+            "Type": "Succeed"
+        },
+        "ChoiceState": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Or": [
+                      {
+                          "Variable": "$.test_status",
+                          "StringEquals": "COMPLETED"
+                      },
+                      {
+                          "Variable": "$.test_status",
+                          "StringEquals": "STOPPING"
+                      }
+                    ],
+                    "Next": "LambdaSQSRun"
+                }
+            ],
+            "Default": "Timer",
+            "OutputPath": "$"
+        },
+                "LambdaSQSRun": {
+            "Type": "Task",
+            "Resource": "ARN:function:lambda_sqs_run",
+            "OutputPath": "$",
+            "Next": "Finish"
+        }
+    }
+} 
